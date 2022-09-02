@@ -1,0 +1,7 @@
+test-samples
+build
+./*.png
+./*.jpg
+
+.cache
+tests/face*

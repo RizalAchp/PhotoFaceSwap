@@ -1,0 +1,34 @@
+---
+BasedOnStyle: Google
+Standard: c++20
+IndentWidth: 4
+---
+Language: Cpp
+PointerAlignment: Right
+AlignAfterOpenBracket: Align
+DerivePointerAlignment: false
+# AlignArrayOfStructures: Right
+BreakConstructorInitializers: BeforeComma
+# EmptyLineBeforeAccessModifier: LogicalBlock
+FixNamespaceComments: true
+IncludeBlocks: Regroup
+
+NamespaceIndentation: All
+CompactNamespaces: true
+AllowShortCaseLabelsOnASingleLine: true
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+# AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+# AlignConsecutiveDeclarations: AcrossEmptyLines
+# AlignConsecutiveAssignments: AcrossEmptyLinesAndComments
+AllowShortFunctionsOnASingleLine: All
+
+BreakBeforeBraces: Allman
+ColumnLimit: '100'
+
+AlwaysBreakTemplateDeclarations: Yes
+AlignConsecutiveMacros: AcrossEmptyLines
+AlignConsecutiveAssignments: AcrossEmptyLines
+AllowShortLambdasOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+---
