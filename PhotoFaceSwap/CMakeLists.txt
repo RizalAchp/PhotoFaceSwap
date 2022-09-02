@@ -1,5 +1,5 @@
 include(GNUInstallDirs)
-include(${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/utils.cmake)
 
 # fetch content dlib libraries
 include(FetchContent)
@@ -30,6 +30,9 @@ if(NOT DLIB_NO_GUI_SUPPORT)
     if(PFS_ENABLE_SANITIZER)
       target_enable_sanitizer(${TARGET_NAME})
     endif()
+    message(STATUS "enabling precompiled header build library GuiWrap")
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/pch.h.in ${PROJECT_BINARY_DIR}/pch.h @ONLY)
+    target_precompile_headers(${TARGET_NAME} PRIVATE ${PROJECT_BINARY_DIR}/pch.h)
 
   else()
     message(FATAL_ERROR "OpenCV not found, so we won't build the example.")
