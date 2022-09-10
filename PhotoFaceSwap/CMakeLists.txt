@@ -7,7 +7,7 @@ set(FETCHCONTENT_QUIET OFF)
 FetchContent_Declare(
   dlib
   GIT_REPOSITORY https://github.com/davisking/dlib.git
-  GIT_TAG efe46ce76abfb265fc05c0e9a78741abf1bedfec # v19.24
+  GIT_TAG v19.24
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE)
 option(USE_AVX_INSTRUCTIONS "Compile your program with AVX instructions" ON)
@@ -33,6 +33,9 @@ if(NOT DLIB_NO_GUI_SUPPORT)
     message(STATUS "enabling precompiled header build library GuiWrap")
     configure_file(${PROJECT_SOURCE_DIR}/cmake/pch.h.in ${PROJECT_BINARY_DIR}/pch.h @ONLY)
     target_precompile_headers(${TARGET_NAME} PRIVATE ${PROJECT_BINARY_DIR}/pch.h)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(${TARGET_NAME} PUBLIC -O2)
+    endif()
 
   else()
     message(FATAL_ERROR "OpenCV not found, so we won't build the example.")

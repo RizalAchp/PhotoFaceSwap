@@ -15,7 +15,7 @@ IncludeBlocks: Regroup
 
 NamespaceIndentation: All
 CompactNamespaces: true
-AllowShortCaseLabelsOnASingleLine: true
+# AllowShortCaseLabelsOnASingleLine: true
 AlignEscapedNewlines: Left
 AlignTrailingComments: true
 # AlignConsecutiveMacros: AcrossEmptyLinesAndComments
@@ -24,7 +24,7 @@ AlignTrailingComments: true
 AllowShortFunctionsOnASingleLine: All
 
 BreakBeforeBraces: Allman
-ColumnLimit: '100'
+ColumnLimit: '80'
 
 AlwaysBreakTemplateDeclarations: Yes
 AlignConsecutiveMacros: AcrossEmptyLines
