@@ -25,17 +25,26 @@ if(NOT DLIB_NO_GUI_SUPPORT)
 
     add_executable(${TARGET_NAME} ${CMAKE_CURRENT_LIST_DIR}/main.cpp)
     target_sources(${TARGET_NAME} PRIVATE ${TARGET_SOURCES})
-    target_link_libraries(${TARGET_NAME} PRIVATE dlib::dlib ${OpenCV_LIBS})
+    target_link_libraries(
+      ${TARGET_NAME} PRIVATE dlib::dlib ${OpenCV_LIBS})
+
     target_enable_warning(${TARGET_NAME})
     if(PFS_ENABLE_SANITIZER)
       target_enable_sanitizer(${TARGET_NAME})
     endif()
     message(STATUS "enabling precompiled header build library GuiWrap")
-    configure_file(${PROJECT_SOURCE_DIR}/cmake/pch.h.in ${PROJECT_BINARY_DIR}/pch.h @ONLY)
-    target_precompile_headers(${TARGET_NAME} PRIVATE ${PROJECT_BINARY_DIR}/pch.h)
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/pch.h.in
+                   ${PROJECT_BINARY_DIR}/pch.h @ONLY)
+    target_precompile_headers(${TARGET_NAME} PRIVATE
+                              ${PROJECT_BINARY_DIR}/pch.h)
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(${TARGET_NAME} PUBLIC -O2)
+      message(STATUS "ENABLING OPTIMIZATION on RELEASE BUILD")
+      target_compile_options(${TARGET_NAME} PRIVATE -O3 -DNDEBUG)
     endif()
+
+    # embed_resource("model/shapepredictor.dat", "include/shapepredictor.hpp",
+    # "shapepredictor") add_resource_embed(${TARGET_NAME}
+    # "model/shapepredictor.dat")
 
   else()
     message(FATAL_ERROR "OpenCV not found, so we won't build the example.")

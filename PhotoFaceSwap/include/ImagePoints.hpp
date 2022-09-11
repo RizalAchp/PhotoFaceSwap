@@ -13,6 +13,9 @@ namespace cv
         ImagePoints2f CvxHull_target;
     };
 
+    void get_point_image(const fs::path &path_image_src,
+                             const fs::path &path_image_target,
+                             cv::ConvexHullPoints &out);
     void get_point_image(const fs::path &&predictor_file,
                          const fs::path &path_image_src,
                          const fs::path &path_image_target,
