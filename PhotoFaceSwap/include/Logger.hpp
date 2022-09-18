@@ -9,25 +9,23 @@ enum LogLevel : int
     Error
 };
 
-class Logger
+void setLogLevel(int level);
+class LoggerPhotoFaceSwap
 {
-    explicit Logger() noexcept = default;
-    ~Logger() noexcept         = default;
+    explicit LoggerPhotoFaceSwap() noexcept = default;
+    ~LoggerPhotoFaceSwap() noexcept         = default;
 
    public:
     void Debug(const char *_file, int _line, const std::string &msg);
     void Warning(const char *_file, int _line, const std::string &msg);
     void Error(const char *_file, int _line, const std::string &msg);
 
-    void Init(LogLevel level);
-
-   private:
-    LogLevel m_Level = LogLevel::Warning;
+    static LogLevel Level;
 
    public:
-    static Logger &Instance()
+    static LoggerPhotoFaceSwap &Instance()
     {
-        static Logger log;
+        static LoggerPhotoFaceSwap log;
         return log;
     }
 };

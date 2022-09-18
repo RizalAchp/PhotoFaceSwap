@@ -14,7 +14,6 @@ macro(target_enable_warning target_name)
       $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
       -Wall
       -Wextra
-      -Werror
       -Wfatal-errors>
       $<$<CXX_COMPILER_ID:MSVC>:${MSVC_OPTIONS}>)
   # -Wconversion

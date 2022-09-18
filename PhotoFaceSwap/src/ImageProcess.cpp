@@ -8,7 +8,6 @@ namespace cv
         const Rect &&rect, const ImagePoints2f &points,
         std::vector<std::array<int, 3>> &delaunayTri)
     {
-        EXEC_TIMER("calculating Delaunay Trinangle");
         LOG_DEBUG("Create an instance of Subdiv2D");
         Subdiv2D subdiv(rect);
 
@@ -86,7 +85,6 @@ namespace cv
     void CalculateMask(const ImagePoints2f &hull, const Mat &tgt_mat,
                        Mat &mask_out)
     {
-        EXEC_TIMER("calculating Mask from hull and mat target");
         // Calculate mask
         mask_out = Mat::zeros(tgt_mat.rows, tgt_mat.cols, tgt_mat.depth());
 
@@ -102,7 +100,6 @@ namespace cv
     void ProcessImage(const fs::path &_src, const fs::path &_target,
                       const cv::ConvexHullPoints &points, cv::Mat &output)
     {
-        EXEC_TIMER("processing image source and target");
         Mat src_mat = imread(_src);
         Mat tgt_mat = imread(_target);
         Mat warped  = tgt_mat.clone();
@@ -136,7 +133,6 @@ namespace cv
 
     void ShowResult(cv::Mat &result)
     {
-        EXEC_TIMER("open result on gui");
         imshow(format("hasil FaceSwapped"), result);
         waitKey(0);
         destroyAllWindows();
@@ -144,8 +140,6 @@ namespace cv
 
     void SaveResult(const fs::path &file, const cv::Mat &result)
     {
-        EXEC_TIMER(
-            cv::format("saving result into file: %s", file.c_str()).c_str());
         imwrite(file, result);
     }
 }  // namespace cv

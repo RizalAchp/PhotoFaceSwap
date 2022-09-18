@@ -1,4 +1,4 @@
 #!/bin/bash
 set -xe
 
-cmake --build ./build --target PhotoFaceSwap  --config Release
+cmake --build ./build --target all
