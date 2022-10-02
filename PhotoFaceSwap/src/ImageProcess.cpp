@@ -97,12 +97,15 @@ namespace cv
         fillConvexPoly(mask_out, &hull8U[0], size_hull, Scalar(255, 255, 255));
     }
 
-    void ProcessImage(const fs::path &_src, const fs::path &_target,
+    void ProcessImage(const Mat &_src_mat,const Mat &_tgt_mat,
                       const cv::ConvexHullPoints &points, cv::Mat &output)
     {
-        Mat src_mat = imread(_src);
-        Mat tgt_mat = imread(_target);
-        Mat warped  = tgt_mat.clone();
+
+        Mat src_mat;
+        Mat tgt_mat;
+        cv::cvtColor(_src_mat, src_mat, cv::COLOR_RGBA2BGR);
+        cv::cvtColor(_tgt_mat, tgt_mat, cv::COLOR_RGBA2BGR);
+        Mat warped = tgt_mat.clone();
         src_mat.convertTo(src_mat, CV_32F);
         warped.convertTo(warped, CV_32F);
 

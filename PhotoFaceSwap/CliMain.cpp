@@ -2,6 +2,7 @@
 
 #include <PhotoFaceSwap.hpp>
 #include <TermColor.hpp>
+#include "ImagePoints.hpp"
 
 int MainCli(argparse::ArgumentParser &args)
 {
@@ -28,13 +29,13 @@ int MainCli(argparse::ArgumentParser &args)
             file_target.c_str());
         return 1;
     }
+    cv::Mat source = cv::imread(file_source);
+    cv::Mat target = cv::imread(file_target);
     ConvexHullPoints ch_points;
-    if (args.is_used("-p"))
-        get_point_image(args.get("-p"), file_source, file_target, ch_points);
-    else get_point_image(file_source, file_target, ch_points);
+    GetPointImage(file_source, file_target, ch_points);
 
     cv::Mat result;
-    ProcessImage(file_source, file_target, ch_points, result);
+    ProcessImage(source, target, ch_points, result);
     ShowResult(result);
 
     fs::path file_out = args.get("-o");

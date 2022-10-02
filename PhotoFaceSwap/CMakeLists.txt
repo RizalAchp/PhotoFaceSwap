@@ -21,6 +21,8 @@ FetchContent_MakeAvailable(mahi-gui)
 set(TARGET_NAME PhotoFaceSwap)
 
 file(GLOB_RECURSE TARGET_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
+file(GLOB HEADER_GUI ${CMAKE_CURRENT_LIST_DIR}/gui/*.hpp)
+file(GLOB SRC_GUI ${CMAKE_CURRENT_LIST_DIR}/gui/*.cpp)
 
 find_package(OpenCV REQUIRED)
 message(${OpenCV_LIBS})
@@ -47,12 +49,16 @@ if(OpenCV_FOUND)
     target_compile_options(${TARGET_NAME} PRIVATE -O3 -mavx -DNDEBUG)
   endif()
 
-  add_executable(${TARGET_NAME}-Gui ${CMAKE_CURRENT_LIST_DIR}/GuiMain.cpp
-                                    ${CMAKE_CURRENT_LIST_DIR}/shape_predictor.o)
+  add_executable(
+    ${TARGET_NAME}-Gui
+    ${CMAKE_CURRENT_LIST_DIR}/GuiMain.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/shape_predictor.o ${HEADER_GUI} ${SRC_GUI})
   target_sources(${TARGET_NAME}-Gui PRIVATE ${TARGET_SOURCES})
+  target_include_directories(${TARGET_NAME}-Gui PRIVATE ${CMAKE_CURRENT_LIST_DIR}/gui)
   target_link_libraries(${TARGET_NAME}-Gui PUBLIC dlib::dlib ${OpenCV_LIBS}
                                                   mahi::gui)
   target_link_options(${TARGET_NAME}-Gui PUBLIC -v -s)
+  target_compile_definitions(${TARGET_NAME}-Gui PUBLIC PFS_GUI)
 
   target_enable_warning(${TARGET_NAME}-Gui)
   if(PFS_ENABLE_SANITIZER)
