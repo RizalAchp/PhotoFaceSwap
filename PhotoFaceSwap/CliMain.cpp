@@ -2,6 +2,7 @@
 
 #include <PhotoFaceSwap.hpp>
 #include <TermColor.hpp>
+
 #include "ImagePoints.hpp"
 
 int MainCli(argparse::ArgumentParser &args)
@@ -10,6 +11,7 @@ int MainCli(argparse::ArgumentParser &args)
     using namespace cv;
     LOG_DEBUG("STARTING CLI Mode");
 
+    LoggerPhotoFaceSwap::Init<DefaultWriter>();
     setLogLevel(args.get<int>("-d"));
     fs::path file_source = args.get("source_img");
     if (!fs::exists(file_source))
@@ -31,12 +33,13 @@ int MainCli(argparse::ArgumentParser &args)
     }
     cv::Mat source = cv::imread(file_source);
     cv::Mat target = cv::imread(file_target);
-    ConvexHullPoints ch_points;
-    GetPointImage(file_source, file_target, ch_points);
+    std::vector<ImagePoints2f> points_source;
+    std::vector<ImagePoints2f> points_target;
+    GetPointImage(source, points_source, false);
+    GetPointImage(target, points_target, false);
 
     cv::Mat result;
-    ProcessImage(source, target, ch_points, result);
-    ShowResult(result);
+    ProcessImage(source, target, points_source[0], points_target[0], result);
 
     fs::path file_out = args.get("-o");
     file_out.replace_extension(file_target.extension());

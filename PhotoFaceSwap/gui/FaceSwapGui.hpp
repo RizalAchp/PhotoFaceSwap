@@ -33,8 +33,10 @@ class PhotoFaceSwapApplication : public mahi::gui::Application
 
 
    public:
-    ImageProcessing m_Images;
-    AppLog logger;
+    ImageSwap Source;
+    ImageSwap Target;
+    ImageSwap Output;
+    std::string errorMsg;
     std::mutex mtx;
     std::vector<std::string> outs;
 

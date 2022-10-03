@@ -1,10 +1,9 @@
+#include <dlib/image_loader/load_image.h>
+#include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/opencv/cv_image.h>
 
-#include <ImagePoints.hpp>
 #include <PhotoFaceSwap.hpp>
-
-#include "dlib/image_loader/load_image.h"
-#include "dlib/image_processing/frontal_face_detector.h"
+#include <opencv2/imgproc.hpp>
 
 static dlib::shape_predictor s_SP;
 static dlib::frontal_face_detector s_Detector;
@@ -27,9 +26,9 @@ inline cv::ImagePoints2f ReadPoints(const fs::path &pointsFileName)
 }
 
 inline void GetPoints(const dlib::array2d<dlib::rgb_pixel> &img,
-                      std::vector<cv::Point2f> &output)
+                      std::vector<cv::ImagePoints2f> &output)
 {
-    auto det = s_Detector(img);
+    std::vector<dlib::rectangle> det = s_Detector(img);
     LOG_DEBUG("detecting {%zu} face from image", det.size());
     if (det.size() > 1)
         LOG_WARNING(
@@ -40,20 +39,24 @@ inline void GetPoints(const dlib::array2d<dlib::rgb_pixel> &img,
         LOG_ERROR(
             "cannot detect face in image! make sure the source image is "
             "valid!");
-        std::exit(1);
+        return;
     }
 
-    std::vector<dlib::full_object_detection> obj;
-    obj.reserve(det.size());
-    for (auto &rect : det) obj.push_back(s_SP(img, rect));
-    auto num_parts = obj[0].num_parts();
-
-    LOG_DEBUG("getting {%zu} face detection part ", num_parts);
-    output.reserve(num_parts);
-    for (size_t i = 0; i < num_parts; i++)
+    output.reserve(det.size());
+    for (auto &rect : det)
     {
-        auto &o = obj[0].part(i);
-        output.push_back(cv::Point2f(o.x(), o.y()));
+        auto fod = s_SP(img, rect);
+        auto np  = fod.num_parts();
+        cv::ImagePoints2f ip;
+        ip.reserve(np);
+
+        for (size_t i = 0; i < np; i++)
+        {
+            auto &pt = fod.part(i);
+            ip.push_back(cv::Point2f(pt.x(), pt.y()));
+        }
+
+        output.push_back(ip);
     }
 }
 
@@ -61,10 +64,8 @@ void cv::GetConvexHullPoints(cv::ImagePoints2f &point_src,
                              cv::ImagePoints2f &point_target)
 {
     std::vector<int> hull_Idx;
-    cv::ImagePoints2f temp_src;
-    cv::ImagePoints2f temp_target;
-    temp_src.swap(point_src);
-    temp_target.swap(point_target);
+    cv::ImagePoints2f temp_src(point_src);
+    cv::ImagePoints2f temp_target(point_target);
     convexHull(temp_target, hull_Idx, false, false);
 
     point_src.clear();
@@ -78,28 +79,49 @@ void cv::GetConvexHullPoints(cv::ImagePoints2f &point_src,
     }
 }
 
-void cv::GetPointImage(const cv::Mat &mat, cv::ImagePoints2f &out)
+void cv::GetConvexHullPoints(std::vector<cv::ImagePoints2f> &point_src,
+                             std::vector<cv::ImagePoints2f> &point_target,
+                             size_t idx)
 {
-    Mat tmp;
-    cv::cvtColor(mat, tmp, cv::COLOR_BGR2RGB);
+    int sz_src = point_src.size();
+    std::vector<ImagePoints2f> tmp_target(sz_src, point_target[idx]);
+    for (int i = 0; i < sz_src; i++)
+    {
+        GetConvexHullPoints(point_src[i], tmp_target[i]);
+    }
+
+    point_target.clear();
+    point_target.swap(tmp_target);
+}
+
+void cv::GetPointImage(const cv::Mat &_mat, std::vector<cv::ImagePoints2f> &out,
+                       bool convert)
+{
+    cv::Mat mat;
+    _mat.copyTo(mat);
+    if (convert)
+    {
+        cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGR);
+    }
     dlib::array2d<dlib::rgb_pixel> dlibFrame;
-    dlib::assign_image(dlibFrame, dlib::cv_image<dlib::rgb_pixel>(tmp));
+    dlib::assign_image(dlibFrame, dlib::cv_image<dlib::rgb_pixel>(mat));
 
     GetPoints(dlibFrame, out);
 }
 
 void cv::GetPointImage(const fs::path &path_image_src,
                        const fs::path &path_image_target,
-                       cv::ConvexHullPoints &out)
+                       std::vector<ImagePoints2f> &out_src,
+                       std::vector<ImagePoints2f> &out_target)
 {
     dlib::array2d<dlib::rgb_pixel> img_src;
     dlib::array2d<dlib::rgb_pixel> img_target;
     dlib::load_image(img_src, path_image_src);
     dlib::load_image(img_target, path_image_target);
 
-    GetPoints(img_src, out.CvxHull_source);
-    GetPoints(img_target, out.CvxHull_target);
-    GetConvexHullPoints(out.CvxHull_source, out.CvxHull_source);
+    GetPoints(img_src, out_src);
+    GetPoints(img_target, out_target);
+    GetConvexHullPoints(out_src, out_target);
 }
 
 void cv::SavePointImage(const fs::path &path_point, const ImagePoints2f &point)

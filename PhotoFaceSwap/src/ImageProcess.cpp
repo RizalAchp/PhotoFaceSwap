@@ -13,7 +13,7 @@ namespace cv
 
         LOG_DEBUG("Insert points into subdiv");
         delaunayTri.reserve(points.size());
-        for (const cv::Point2f &it : points)
+        for (auto &it : points)
         {
             subdiv.insert(it);
 
@@ -97,48 +97,40 @@ namespace cv
         fillConvexPoly(mask_out, &hull8U[0], size_hull, Scalar(255, 255, 255));
     }
 
-    void ProcessImage(const Mat &_src_mat,const Mat &_tgt_mat,
-                      const cv::ConvexHullPoints &points, cv::Mat &output)
+    void ProcessImage(const Mat &_src_mat, const Mat &_tgt_mat,
+                      const cv::ImagePoints2f &poinsrc,
+                      const cv::ImagePoints2f &pointarget, cv::Mat &output)
     {
-
         Mat src_mat;
         Mat tgt_mat;
-        cv::cvtColor(_src_mat, src_mat, cv::COLOR_RGBA2BGR);
-        cv::cvtColor(_tgt_mat, tgt_mat, cv::COLOR_RGBA2BGR);
+        _src_mat.convertTo(src_mat, CV_32F);
+        _tgt_mat.copyTo(tgt_mat);
         Mat warped = tgt_mat.clone();
-        src_mat.convertTo(src_mat, CV_32F);
         warped.convertTo(warped, CV_32F);
 
         std::vector<std::array<int, 3>> dt;
-        CalculateDelaunayTriangles({0, 0, warped.cols, warped.rows},
-                                   points.CvxHull_target, dt);
+        CalculateDelaunayTriangles({0, 0, warped.cols, warped.rows}, pointarget,
+                                   dt);
         for (size_t i = 0; i < dt.size(); i++)
         {
             std::vector<Point2f> t1, t2;
             // Get points for img1, img2 corresponding to the triangles
             for (size_t j = 0; j < 3; j++)
             {
-                t1.push_back(points.CvxHull_source[dt[i][j]]);
-                t2.push_back(points.CvxHull_target[dt[i][j]]);
+                t1.push_back(poinsrc[dt[i][j]]);
+                t2.push_back(pointarget[dt[i][j]]);
             }
             WarpTriangle(src_mat, warped, t1, t2);
         }
 
         // Calculate mask
         Mat mask;
-        CalculateMask(points.CvxHull_target, tgt_mat, mask);
+        CalculateMask(pointarget, tgt_mat, mask);
         // Clone seamlessly.
-        Rect r = boundingRect(points.CvxHull_target);
+        Rect r = boundingRect(pointarget);
         warped.convertTo(warped, CV_8UC3);
         seamlessClone(warped, tgt_mat, mask, (r.tl() + r.br()) / 2, output,
                       NORMAL_CLONE);
-    }
-
-    void ShowResult(cv::Mat &result)
-    {
-        imshow(format("hasil FaceSwapped"), result);
-        waitKey(0);
-        destroyAllWindows();
     }
 
     void SaveResult(const fs::path &file, const cv::Mat &result)

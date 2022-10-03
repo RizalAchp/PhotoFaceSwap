@@ -2,7 +2,7 @@
 #include "FaceSwapGui.hpp"
 
 #include "ImagePoints.hpp"
-#include "Mahi/Util/Logging/Log.hpp"
+#include "Logger.hpp"
 
 using namespace mahi;
 using namespace mahi::util;
@@ -10,8 +10,9 @@ using namespace mahi::util;
 PhotoFaceSwapApplication::PhotoFaceSwapApplication(
     const PhotoFaceSwapApplication::Config &config)
     : Application(config)
-    , m_Images()
-    , logger()
+    , Source()
+    , Target()
+    , Output()
     , mtx()
     , outs()
     , font_small(AddDefaultFont("Roboto Mono Regular",
@@ -25,6 +26,8 @@ PhotoFaceSwapApplication::PhotoFaceSwapApplication(
                               gui::RobotoMono_Bold_ttf_len, 30))
     , mSize(1280, 720)
 {
+    LoggerPhotoFaceSwap::Init<AppLog>();
+    setLogLevel(LogLevel::Debug);
     // disable viewports
     ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_ViewportsEnable;
     // connect to the file drop event
@@ -33,9 +36,8 @@ PhotoFaceSwapApplication::PhotoFaceSwapApplication(
                               &PhotoFaceSwapApplication::resizeWindowHandler);
     on_window_closing.connect(this,
                               &PhotoFaceSwapApplication::closeWindowHandler);
-    on_error.connect(
-        [&](int code, const std::string &err)
-        { logger.AddLog("[ERROR]: %d - %s \n", code, err.c_str()); });
+    on_error.connect([&](int code, const std::string &err)
+                     { LOG_ERROR("[ERROR]: %d - %s \n", code, err.c_str()); });
 
     auto &stle             = ImGui::GetStyle();
     stle.WindowPadding     = {5.f, 5.f};
@@ -47,13 +49,13 @@ PhotoFaceSwapApplication::PhotoFaceSwapApplication(
     stle.ItemSpacing       = {5.f, 5.f};
     stle.ColumnsMinSpacing = 5.f;
 
-    logger.AddLog("[DEBUG]: Initialize app.. \n");
-    logger.AddLog("[DEBUG]: config: {\n");
-    logger.AddLog("   -title: %s\n", config.title.c_str());
-    logger.AddLog("   -widht: %d\n", config.width);
-    logger.AddLog("   -height: %d\n", config.height);
-    logger.AddLog("   -monitor: %d\n", config.monitor);
-    logger.AddLog("}\n");
+    LOG_DEBUG("[DEBUG]: Initialize app.. \n");
+    LOG_DEBUG("[DEBUG]: config: {\n");
+    LOG_DEBUG("   -title: %s\n", config.title.c_str());
+    LOG_DEBUG("   -widht: %d\n", config.width);
+    LOG_DEBUG("   -height: %d\n", config.height);
+    LOG_DEBUG("   -monitor: %d\n", config.monitor);
+    LOG_DEBUG("}\n");
 }
 
 void PhotoFaceSwapApplication::update()
@@ -65,10 +67,58 @@ void PhotoFaceSwapApplication::update()
     if (ImGui::Begin("Image View Source", NULL,
                      SetNextOverlayCorner(_PositionCorner::TopLeft, 1.f)))
     {
-        if (m_Images.source.empty())
+        if (outs.size() == 1)
+        {
+            auto file = *outs.begin();
+            if (Source.Open(file))
+            {
+                Source.Resize(ImGui::GetContentRegionAvail());
+            }
+            else
+            {
+                this->errorMsg.clear();
+                this->errorMsg =
+                    cv::format("Cannot Open Image on file: %s", file.c_str());
+                ImGui::OpenPopup("ERROR!");
+            }
+        }
+        if (Source.resized.empty() || Source.raw.empty())
             this->ButtonFileManager(
                 (const char *)ICON_FA_FILE " Open Source Image", true);
-        else m_Images.DrawImage(TypeImage::Source);
+        else
+        {
+            if (ImGui::Button("Close Image##source"))
+            {
+                Source.Close();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("GetPoints Image##source"))
+            {
+                if (!Source.ProcessPoints())
+                {
+                    this->errorMsg.clear();
+                    this->errorMsg =
+                        "Thereis No Face Destected on Source Image!";
+                    ImGui::OpenPopup("ERROR!");
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("RemovePoints##source"))
+            {
+                Source.points_show.clear();
+                Source.points.clear();
+            }
+            ImGui::SameLine();
+            static int flipcode = FlipCode::Horizontal;
+            ImGui::PushItemWidth(100);
+            if (ImGui::Combo("FlipImage##source", &flipcode,
+                             FLIP_CODE_NAME, IM_ARRAYSIZE(FLIP_CODE_NAME)))
+            {
+                Source.Flip(flipcode);
+            }
+
+            Source.Draw();
+        }
         ImGui::End();
     }
 
@@ -76,58 +126,156 @@ void PhotoFaceSwapApplication::update()
     if (ImGui::Begin("Image View Target", NULL,
                      SetNextOverlayCorner(_PositionCorner::BottomLeft, 1.f)))
     {
-        if (m_Images.target.empty())
+        if (outs.size() > 1)
+        {
+            auto file = outs[1];
+            if (Target.Open(file))
+                Target.Resize(ImGui::GetContentRegionAvail());
+            else
+            {
+                this->errorMsg.clear();
+                this->errorMsg =
+                    cv::format("Cannot Open Image on file: %s", file.c_str());
+                ImGui::OpenPopup("ERROR!");
+            }
+            outs.clear();
+        }
+        if (Target.resized.empty() || Target.raw.empty())
             this->ButtonFileManager(
                 (const char *)ICON_FA_FILE " Open Target Image", false);
-        else m_Images.DrawImage(TypeImage::Target);
+        else
+        {
+            if (ImGui::Button("Close Image##target"))
+            {
+                Target.Close();
+                outs.clear();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("GetPoints Image##target"))
+            {
+                if (!Target.ProcessPoints())
+                {
+                    this->errorMsg.clear();
+                    this->errorMsg =
+                        "Thereis No Face Destected on Target Image!";
+                    ImGui::OpenPopup("ERROR!");
+                }
+            }
+            Target.Draw();
+        }
         ImGui::End();
     }
 
-    ImGui::SetNextWindowSize({w, h * 1.6f}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({w, h * 1.4f}, ImGuiCond_Always);
     auto flags_out = SetNextOverlayCorner(_PositionCorner::TopRight, 1.f);
     if (ImGui::Begin("OutputImage", NULL, flags_out))
     {
-        if (m_Images.output.empty())
+        if (Output.raw.empty())
         {
             if (ImGui::Button("Swap Target"))
             {
-                logger.AddLog("[DEBUG]: swaaping target and source image..\n");
-                cv::swap(m_Images.source, m_Images.target);
-                std::swap(m_Images.p_target, m_Images.p_source);
-                std::swap(m_Images.texture_source, m_Images.texture_target);
+                LOG_DEBUG("swaaping target and source image..\n");
+                cv::swap(Source.raw, Target.raw);
+                cv::swap(Source.resized, Target.resized);
+                std::swap(Source.points, Target.points);
+                std::swap(Source.points_show, Target.points_show);
+                std::swap(Source.point_selected, Target.point_selected);
+                std::swap(Source.texture, Target.texture);
+                Source.UpdateTexture();
+                Target.UpdateTexture();
             }
-            if (!m_Images.source.empty() && !m_Images.target.empty())
+            if (!Source.raw.empty() && !Target.raw.empty())
             {
-                ImGui::SameLine();
                 if (ImGui::Button("Start Swapping Face"))
                 {
-                    logger.AddLog(
-                        "[PROCESS]: processing to get convexhull of points "
-                        "image\n");
-                    cv::GetConvexHullPoints(m_Images.p_source,
-                                            m_Images.p_target);
-                    logger.AddLog("[PROCESS]: processing to swap the image\n");
-                    auto convex = cv::ConvexHullPoints(m_Images.p_source,
-                                                       m_Images.p_target);
-                    cv::ProcessImage(m_Images.source, m_Images.target, convex,
-                                     m_Images.output);
+                    ImGui::SameLine();
+                    try
+                    {
+                        LOG_DEBUG(
+                            "PROCESS: processing to get convexhull of "
+                            "points "
+                            "image\n");
+                        if (Source.points.empty() || Target.points.empty())
+                        {
+                            Source.ProcessPoints();
+                            Target.ProcessPoints();
+                        }
+                        cv::GetConvexHullPoints(Source.points, Target.points);
+                        LOG_DEBUG("PROCESS: processing to swap the image\n");
+                        cv::ProcessImage(Source.raw, Target.raw,
+                                         Source.GetPointSelected(),
+                                         Target.GetPointSelected(), Output.raw);
 
-                    double scale = (h * 1.5f) / m_Images.output.size().height;
-                    cv::resize(m_Images.output, m_Images.output, cv::Size(0, 0), scale, scale);
-                    cv::cvtColor(m_Images.output, m_Images.output, cv::COLOR_BGR2RGBA);
-                    m_Images.output.copyTo(m_Images.output);
-                    m_Images.UpdateTexture(TypeImage::Output);
+                        Output.Resize(ImGui::GetContentRegionAvail());
+                        Output.UpdateTexture();
+                    }
+                    catch (const cv::Exception &e)
+                    {
+                        errorMsg.clear();
+                        errorMsg = e.what();
+                        ImGui::OpenPopup("ERROR!");
+                    }
+                    catch (const std::exception &e)
+                    {
+                        errorMsg.clear();
+                        errorMsg = e.what();
+                        ImGui::OpenPopup("ERROR!");
+                    }
                 }
             }
         }
         else
         {
-            m_Images.DrawImage(TypeImage::Output);
+            if (ImGui::Button((const char *)ICON_FA_TRASH "Close All"))
+            {
+                LOG_DEBUG("Closing all image..\n");
+                Source.Close();
+                Target.Close();
+                Output.Close();
+                outs.clear();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button((const char *)ICON_FA_TRASH "Close##output"))
+            {
+                LOG_DEBUG("Closing all image..\n");
+                Output.Close();
+                outs.clear();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button((const char *)ICON_FA_IMAGES "Save Output##1"))
+            {
+                std::thread thrd(
+                    [this]()
+                    {
+                        std::string out;
+                        std::lock_guard<std::mutex> lock(mtx);
+                        if (gui::save_dialog(
+                                out, {{"Images", "png,jpg,jpeg,webp,bmp"}}, "",
+                                "output.png") == gui::DialogResult::DialogOkay)
+                        {
+                            if (cv::imwrite(out, this->Output.raw))
+                                LOG_DEBUG("Success saving Image on: %s",
+                                          out.c_str());
+                            else
+                            {
+                                errorMsg.clear();
+                                errorMsg = cv::format(
+                                    "Error on Saving Output Image to file: %s",
+                                    out.c_str());
+                                LOG_ERROR("%s", errorMsg.c_str());
+                                ImGui::OpenPopup("ERROR!");
+                            }
+                        }
+                    });
+
+                thrd.detach();
+            }
+            Output.Draw();
         }
     }
 
     auto flags = SetNextOverlayCorner(_PositionCorner::BottomRight);
-    ImGui::SetNextWindowSize({w, h * 0.4f}, ImGuiCond_Always);
+    ImGui::SetNextWindowSize({w, h * 0.6f}, ImGuiCond_Always);
     ImGui::PushFont(font_small);
     if (ImGui::Begin("Log PhotoFaceSwap", NULL, flags))
     {
@@ -141,8 +289,15 @@ void PhotoFaceSwapApplication::update()
             gui::open_email("rizal.ahmadp@gmail.com", "I love you!");
         ImGui::End();
     }
-    logger.Draw("Log PhotoFaceSwap", NULL, flags);
+    LOG_DRAW("Log PhotoFaceSwap", NULL, flags);
     ImGui::PopFont();
+
+    if (ImGui::BeginPopupModal("ERROR!", NULL))
+    {
+        ImGui::Text("Got Error: %s", errorMsg.c_str());
+        if (ImGui::Button("Ok")) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
 }
 
 void PhotoFaceSwapApplication::fileDropHandler(
@@ -150,20 +305,16 @@ void PhotoFaceSwapApplication::fileDropHandler(
 {
     for (auto &path : paths)
     {
-        logger.AddLog("[DEBUG]: Get Dropped file: %s\n", path.c_str());
+        LOG_DEBUG("Get Dropped file: %s\n", path.c_str());
     }
-    outs = paths;
+    outs.push_back(paths[0]);
 }
 
 void PhotoFaceSwapApplication::resizeWindowHandler(int w, int h)
 {
-    logger.AddLog("[DEBUG]: window sizing(widht: %d, height: %d)\n", w, h);
+    LOG_DEBUG("window sizing(widht: %d, height: %d)\n", w, h);
     mSize.x = w;
     mSize.y = h;
-
-    m_Images.UpdateTexture(TypeImage::Source);
-    m_Images.UpdateTexture(TypeImage::Target);
-    m_Images.UpdateTexture(TypeImage::Output);
 }
 
 ImFont *AddDefaultFont(const char *namefont, unsigned char *font,
@@ -207,21 +358,44 @@ bool PhotoFaceSwapApplication::closeWindowHandler() { return true; }
 void PhotoFaceSwapApplication::ButtonFileManager(const char *name,
                                                  bool issource)
 {
-    auto height = ImGui::GetContentRegionAvail().y - 35.f;
     if (ImGui::Button(name))
     {
-        logger.AddLog("[DEBUG]: clicking button for Opening file: %s\n", name);
+        LOG_DEBUG("clicking button for Opening file: %s\n", name);
         std::string out;
         if (gui::open_dialog(out, {{"Images", "png,jpg,jpeg,webp,bmp"}}) ==
             gui::DialogResult::DialogOkay)
         {
-            logger.AddLog("[DEBUG]: got file: %s\n", out.c_str());
-            if (issource) m_Images.OpenImage(TypeImage::Source, out, height);
-            else m_Images.OpenImage(TypeImage::Target, out, height);
-            logger.AddLog("[DEBUG]: got image size(widht: %d, height: %d)\n",
-                          m_Images.target.cols, m_Images.target.rows);
+            LOG_DEBUG("got file: %s\n", out.c_str());
+            if (issource)
+            {
+                if (Source.Open(out))
+                {
+                    Source.Resize(ImGui::GetContentRegionAvail());
+                }
+                else
+                {
+                    this->errorMsg.clear();
+                    this->errorMsg = cv::format("Cannot Open Image on file: %s",
+                                                out.c_str());
+                    ImGui::OpenPopup("ERROR!");
+                }
+            }
+            else
+            {
+                if (Target.Open(out))
+                {
+                    Target.Resize(ImGui::GetContentRegionAvail());
+                }
+                else
+                {
+                    this->errorMsg.clear();
+                    this->errorMsg = cv::format("Cannot Open Image on file: %s",
+                                                out.c_str());
+                    ImGui::OpenPopup("ERROR!");
+                }
+            }
         }
-        else logger.AddLog("[DEBUG]: cencelled file dialog\n");
+        else LOG_DEBUG("cencelled file dialog\n");
     }
 }
 

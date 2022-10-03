@@ -10,29 +10,35 @@
 
 #include "ImagePoints.hpp"
 
-enum TypeImage : int
+enum FlipCode : int
 {
-    Source,
-    Target,
-    Output,
+    Vertical   = -1,
+    Horizontal = 0,
 };
+constexpr const char *FLIP_CODE_NAME[] = {"Vertical", "Horizontal"};
 
-struct ImageProcessing
+struct ImageSwap
 {
-    ImageProcessing() = default;
+    ImageSwap() = default;
+    ~ImageSwap();
+    GLuint texture;
+    cv::Mat raw;
+    cv::Mat resized;
+    std::vector<cv::ImagePoints2f> points;
+    std::vector<cv::ImagePoints2f> points_show;
+    size_t point_selected;
 
-    GLuint texture_source;
-    GLuint texture_target;
-    GLuint texture_output;
-    cv::Mat source;
-    cv::Mat target;
-    cv::Mat output;
-    cv::ImagePoints2f p_source;
-    cv::ImagePoints2f p_target;
+    bool Open(const std::string &file) noexcept(false);
+    void Resize(const mahi::gui::Vec2 &size) noexcept(false);
+    void Flip(int code);
+    void Close() noexcept;
 
-    void OpenImage(TypeImage type, const std::string &file, float height);
-    void ResizeImage(TypeImage type, float height);
-    void ProcessPoints(TypeImage type);
-    void DrawImage(TypeImage type);
-    void UpdateTexture(TypeImage type);
+    void Draw() noexcept(false);
+    void UpdateTexture() noexcept(false);
+    bool ProcessPoints() noexcept(false);
+
+    inline cv::ImagePoints2f &GetPointSelected() noexcept
+    {
+        return this->points.at(point_selected);
+    }
 };

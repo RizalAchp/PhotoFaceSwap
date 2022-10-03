@@ -1,6 +1,13 @@
 include(GNUInstallDirs)
 include(${PROJECT_SOURCE_DIR}/cmake/utils.cmake)
 
+set(BUILD_SHARED_LIBS OFF)
+set(USE_AVX_INSTRUCTIONS ON)
+set(DLIB_NO_GUI_SUPPORT ON)
+set(DLIB_LINK_WITH_SQLITE3_STR OFF)
+set(WITH_GTK OFF)
+set(WITH_OPENGL ON)
+set(WITH_WIN32UI OFF)
 # fetch content dlib libraries
 include(FetchContent)
 FetchContent_Declare(
@@ -9,23 +16,29 @@ FetchContent_Declare(
   GIT_TAG v19.24
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE)
-option(USE_AVX_INSTRUCTIONS "Compile your program with AVX instructions" ON)
-option(DLIB_NO_GUI_SUPPORT ON)
-FetchContent_MakeAvailable(dlib)
 
-include(FetchContent)
+FetchContent_MakeAvailable(dlib)
 FetchContent_Declare(mahi-gui
                      GIT_REPOSITORY https://github.com/mahilab/mahi-gui.git)
 FetchContent_MakeAvailable(mahi-gui)
 
+# Link
 set(TARGET_NAME PhotoFaceSwap)
 
 file(GLOB_RECURSE TARGET_SOURCES ${CMAKE_CURRENT_LIST_DIR}/src/*.cpp)
 file(GLOB HEADER_GUI ${CMAKE_CURRENT_LIST_DIR}/gui/*.hpp)
 file(GLOB SRC_GUI ${CMAKE_CURRENT_LIST_DIR}/gui/*.cpp)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS opencv_core opencv_imgcodecs
+                                        opencv_imgproc opencv_photo)
 message(${OpenCV_LIBS})
+
+set(USE_AVX_INSTRUCTIONS ON)
+set(DLIB_NO_GUI_SUPPORT ON)
+set(DLIB_LINK_WITH_SQLITE3_STR OFF)
+set(WITH_GTK OFF)
+set(WITH_OPENGL ON)
+set(WITH_WIN32UI OFF)
 if(OpenCV_FOUND)
   include_directories(${OpenCV_INCLUDE_DIRS} "/usr/include/opencv4" ${dlib_DIR}
                       ${CMAKE_CURRENT_LIST_DIR}/include)
@@ -54,9 +67,10 @@ if(OpenCV_FOUND)
     ${CMAKE_CURRENT_LIST_DIR}/GuiMain.cpp
     ${CMAKE_CURRENT_LIST_DIR}/shape_predictor.o ${HEADER_GUI} ${SRC_GUI})
   target_sources(${TARGET_NAME}-Gui PRIVATE ${TARGET_SOURCES})
-  target_include_directories(${TARGET_NAME}-Gui PRIVATE ${CMAKE_CURRENT_LIST_DIR}/gui)
-  target_link_libraries(${TARGET_NAME}-Gui PUBLIC dlib::dlib ${OpenCV_LIBS}
-                                                  mahi::gui)
+  target_include_directories(${TARGET_NAME}-Gui
+                             PRIVATE ${CMAKE_CURRENT_LIST_DIR}/gui)
+  target_link_libraries(${TARGET_NAME}-Gui PUBLIC dlib::dlib mahi::gui
+                                                  ${OpenCV_LIBS})
   target_link_options(${TARGET_NAME}-Gui PUBLIC -v -s)
   target_compile_definitions(${TARGET_NAME}-Gui PUBLIC PFS_GUI)
 

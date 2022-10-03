@@ -1,201 +1,133 @@
 #include "Image.hpp"
 
+#include <opencv2/imgproc.hpp>
+
+#include "Mahi/Gui/Icons/IconsFontAwesome5.hpp"
+#include "Mahi/Gui/Native.hpp"
 #include "imgui.h"
-void ImageProcessing::ResizeImage(TypeImage type, float height)
-{
-    switch (type)
-    {
-        case Source:
-        {
-            double scale = height / source.size().height;
-            cv::resize(output, output, cv::Size(0, 0), scale, scale);
-        }
-        break;
-        case Target:
 
-        {
-            double scale = height / target.size().height;
-            cv::resize(output, output, cv::Size(0, 0), scale, scale);
-        }
-        break;
-        case Output:
+ImageSwap::~ImageSwap() { this->Close(); }
 
-        {
-            double scale = height / output.size().height;
-            cv::resize(output, source, cv::Size(0, 0), scale, scale);
-        }
-        break;
-    }
-}
-void ImageProcessing::ProcessPoints(TypeImage type)
+void ImageSwap::Draw() noexcept(false)
 {
-    switch (type)
+    using namespace ImGui;
+    using mahi::gui::Vec2;
+    Vec2 size = Vec2(this->resized.cols, this->resized.rows);
+    Vec2 pos  = GetCursorPos() + (GetContentRegionAvail() - size) * 0.5f;
+
+    SetCursorPos(pos);
+    Image(reinterpret_cast<void *>(static_cast<intptr_t>(this->texture)), size);
+
+    if (this->points.empty()) return;
+    auto drw  = GetWindowDrawList();
+    Vec2 ppos = (pos + GetWindowPos());
+    for (auto &point : this->points_show)
     {
-        case Source:
-            cv::GetPointImage(source, p_source);
-            break;
-        case Target:
-            cv::GetPointImage(target, p_target);
-            break;
-        default:
-            break;
+        for (auto it = point.begin(); it != point.end(); ++it)
+        {
+            auto nx = it + 1;
+            drw->AddLine(Vec2(it->x, it->y) + ppos, Vec2(nx->x, nx->y) + ppos,
+                         IM_COL32(255, 0, 0, 255), 2.f);
+        }
     }
 }
 
-inline static void UpdateTexture_(unsigned char *data, int width, int height,
-                                  GLuint *texture_out)
+bool ImageSwap::Open(const std::string &file) noexcept(false)
 {
-    GLuint texture;
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    this->raw = cv::imread(file);
+    if (this->raw.empty()) return false;
+    return true;
+}
+
+void ImageSwap::Close() noexcept
+{
+    this->raw.release();
+    this->resized.release();
+    this->points.clear();
+    this->points_show.clear();
+    glDeleteTextures(1, &texture);
+}
+void ImageSwap::Flip(int code)
+{
+    cv::flip(this->raw, this->raw, code);
+    cv::flip(this->resized, this->resized, code);
+    this->points.clear();
+    this->points_show.clear();
+
+    this->UpdateTexture();
+}
+void ImageSwap::Resize(const mahi::gui::Vec2 &size) noexcept(false)
+{
+    this->raw.copyTo(this->resized);
+    if (this->raw.rows == size.y) return;
+    auto y     = size.y / this->raw.size().height;
+    auto ip    = this->raw.rows > size.y ? cv::INTER_AREA : cv::INTER_LINEAR;
+    auto yraw  = 1920.0 / this->raw.size().height;
+    auto ipraw = this->raw.rows > 1920.0 ? cv::INTER_AREA : cv::INTER_LINEAR;
+    cv::resize(this->raw, this->raw, cv::Size(0, 0), yraw, yraw, ipraw);
+    cv::resize(this->resized, this->resized, cv::Size(0, 0), y, y, ip);
+    cv::cvtColor(this->resized, this->resized, cv::COLOR_BGR2RGBA);
+    this->UpdateTexture();
+}
+
+void ImageSwap::UpdateTexture() noexcept(false)
+{
+    glGenTextures(1, &this->texture);
+    glBindTexture(GL_TEXTURE_2D, this->texture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                 GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this->resized.cols,
+                 this->resized.rows, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 this->resized.data);
     glGenerateMipmap(GL_TEXTURE_2D);
-
-    *texture_out = texture;
 }
 
-void ImageProcessing::UpdateTexture(TypeImage type)
+bool ImageSwap::ProcessPoints() noexcept(false)
 {
-    switch (type)
+    cv::GetPointImage(this->raw, this->points, false);
+    cv::GetPointImage(this->resized, this->points_show, true);
+    if (this->points.empty() || this->points_show.empty())
     {
-        case Source:
-            UpdateTexture_(source.data, source.cols, source.rows,
-                           &texture_source);
-            break;
-        case Target:
-            UpdateTexture_(target.data, target.cols, target.rows,
-                           &texture_target);
-            break;
-        case Output:
-            UpdateTexture_(output.data, output.cols, output.rows,
-                           &texture_output);
-            break;
+        return false;
     }
+    return true;
 }
 
-inline static void DrawImage_(GLuint &texture, const mahi::gui::Vec2 &size,
-                              const cv::ImagePoints2f *point,
-                              const mahi::gui::Vec2 &pos,
-                              const mahi::gui::Vec2 &optional = {0, 0},
-                              const mahi::gui::Vec2 &padding  = {0, 0})
-{
-    ImGui::SetCursorPos(pos);
-    ImGui::Image(reinterpret_cast<void *>(static_cast<intptr_t>(texture)),
-                 size);
+/// void ImageProcessing::OpenImage(TypeImage type, const std::string &file,
+///                                 float height)
+/// {
+///     cv::Mat tmp = cv::imread(file);
+///     if (tmp.empty()) return;
+///     switch (type)
+///     {
+///         case Source:
+///         {
+///             double scale = height / tmp.size().height;
+///             cv::resize(tmp, tmp, cv::Size(0, 0), scale, scale);
+///             cv::cvtColor(tmp, tmp, cv::COLOR_BGR2RGBA);
+///             tmp.copyTo(source);
 
-    if (point == NULL) return;
-    if (point->empty()) return;
-    auto drw = ImGui::GetWindowDrawList();
-    for (auto it = point->begin(); it != point->end(); ++it)
-    {
-        auto next = it + 1;
-        drw->AddLine(
-            (pos + optional + mahi::gui::Vec2(it->x, it->y)) + padding,
-            (pos + optional + mahi::gui::Vec2(next->x, next->y)) + padding,
-            ImGui::ColorConvertFloat4ToU32(mahi::gui::Colors::Red), 2.f);
-    }
-}
-
-void ImageProcessing::DrawImage(TypeImage type)
-{
-    switch (type)
-    {
-        case TypeImage::Source:
-        {
-            if (ImGui::Button("Close Image##source"))
-            {
-                source.release();
-                p_source.clear();
-                glDeleteTextures(1, &texture_source);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("GetPoints Image Source"))
-            {
-                ProcessPoints(TypeImage::Source);
-            }
-
-            auto size = mahi::gui::Vec2((float)source.cols, (float)source.rows);
-            auto pos  = ImGui::GetCursorPos() +
-                       (ImGui::GetContentRegionAvail() - size) * 0.5f;
-            DrawImage_(texture_source, size, &p_source, pos, {0, 0},
-                       ImGui::GetStyle().FramePadding);
-        }
-        break;
-        case TypeImage::Target:
-        {
-            if (ImGui::Button("Close Image##target"))
-            {
-                target.release();
-                p_target.clear();
-                glDeleteTextures(1, &texture_target);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("GetPoints Image Target"))
-            {
-                ProcessPoints(TypeImage::Target);
-            }
-
-            auto size = mahi::gui::Vec2((float)target.cols, (float)target.rows);
-            auto pos  = ImGui::GetCursorPos() +
-                       (ImGui::GetContentRegionAvail() - size) * 0.5f;
-            DrawImage_(texture_target, size, &p_target, pos,
-                       ImGui::GetWindowPos());
-        }
-        break;
-        case TypeImage::Output:
-        {
-            if (ImGui::Button("Close Image##output"))
-            {
-                output.release();
-                glDeleteTextures(1, &texture_output);
-            }
-            auto size = mahi::gui::Vec2((float)output.cols, (float)output.rows);
-            auto pos  = ImGui::GetCursorPos() +
-                       (ImGui::GetContentRegionAvail() - size) * 0.5f;
-            DrawImage_(texture_output, size, NULL, pos);
-        }
-        break;
-    }
-}
-
-void ImageProcessing::OpenImage(TypeImage type, const std::string &file,
-                                float height)
-{
-    cv::Mat tmp = cv::imread(file);
-    if (tmp.empty()) return;
-    switch (type)
-    {
-        case Source:
-        {
-            double scale = height / tmp.size().height;
-            cv::resize(tmp, tmp, cv::Size(0, 0), scale, scale);
-            cv::cvtColor(tmp, tmp, cv::COLOR_BGR2RGBA);
-            tmp.copyTo(source);
-
-            UpdateTexture(TypeImage::Source);
-        }
-        break;
-        case Target:
-        {
-            double scale = height / tmp.size().height;
-            cv::resize(tmp, tmp, cv::Size(0, 0), scale, scale);
-            cv::cvtColor(tmp, tmp, cv::COLOR_BGR2RGBA);
-            tmp.copyTo(target);
-            UpdateTexture(TypeImage::Target);
-        }
-        break;
-        case Output:
-        {
-            double scale = height / tmp.size().height;
-            cv::resize(tmp, tmp, cv::Size(0, 0), scale, scale);
-            cv::cvtColor(tmp, tmp, cv::COLOR_BGR2RGBA);
-            tmp.copyTo(output);
-            UpdateTexture(TypeImage::Output);
-        }
-        break;
-    }
-}
+///             UpdateTexture(TypeImage::Source);
+///         }
+///         break;
+///         case Target:
+///         {
+///             double scale = height / tmp.size().height;
+///             cv::resize(tmp, tmp, cv::Size(0, 0), scale, scale);
+///             cv::cvtColor(tmp, tmp, cv::COLOR_BGR2RGBA);
+///             tmp.copyTo(target);
+///             UpdateTexture(TypeImage::Target);
+///         }
+///         break;
+///         case Output:
+///         {
+///             double scale = height / tmp.size().height;
+///             cv::resize(tmp, tmp, cv::Size(0, 0), scale, scale);
+///             cv::cvtColor(tmp, tmp, cv::COLOR_BGR2RGBA);
+///             tmp.copyTo(output);
+///             UpdateTexture(TypeImage::Output);
+///         }
+///         break;
+///     }
+/// }

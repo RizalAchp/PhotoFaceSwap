@@ -12,5 +12,6 @@ int main(void)
     config.background = mahi::gui::Colors::Black;
     PhotoFaceSwapApplication app(config);
     app.run();
+
     return 0;
 }
