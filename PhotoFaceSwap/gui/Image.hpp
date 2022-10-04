@@ -1,14 +1,9 @@
 #pragma once
-#include <GuiLogger.hpp>
-#include <Mahi/Gui.hpp>
-#include <Mahi/Gui/Fonts.hpp>
-#include <Mahi/Gui/Icons/IconsFontAwesome5.hpp>
-#include <Mahi/Util.hpp>
-#include <PhotoFaceSwap.hpp>
-#include <mutex>
-#include <thread>
 
-#include "ImagePoints.hpp"
+#include <PhotoFaceSwap.hpp>
+
+#include "Mahi/Gui/Vec2.hpp"
+#include "glad/glad.h"
 
 enum FlipCode : int
 {

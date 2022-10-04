@@ -3,7 +3,8 @@
 #ifndef __FACE_SWAP_GUI_HEADER__
 #define __FACE_SWAP_GUI_HEADER__
 
-#include "Image.hpp"
+#include <GuiLogger.hpp>
+#include <Image.hpp>
 
 typedef int PositionCorner;
 enum _PositionCorner : PositionCorner
@@ -18,7 +19,8 @@ struct ImFont;
 
 ImFont *AddDefaultFont(const char *namefont, unsigned char *font,
                        size_t size_font, float pixel_size);
-ImGuiWindowFlags SetNextOverlayCorner(PositionCorner corner, float alpha = 0.2f);
+ImGuiWindowFlags SetNextOverlayCorner(PositionCorner corner,
+                                      float alpha = 0.2f);
 
 class PhotoFaceSwapApplication : public mahi::gui::Application
 {
@@ -31,14 +33,13 @@ class PhotoFaceSwapApplication : public mahi::gui::Application
 
     void ButtonFileManager(const char *name, bool issource);
 
-
    public:
     ImageSwap Source;
     ImageSwap Target;
     ImageSwap Output;
     std::string errorMsg;
     std::mutex mtx;
-    std::vector<std::string> outs;
+    std::string outs;
 
    private:
     ImFont *font_small;

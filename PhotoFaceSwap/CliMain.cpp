@@ -1,9 +1,5 @@
-#include <dlib/image_processing/shape_predictor.h>
-
 #include <PhotoFaceSwap.hpp>
 #include <TermColor.hpp>
-
-#include "ImagePoints.hpp"
 
 int MainCli(argparse::ArgumentParser &args)
 {

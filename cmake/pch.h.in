@@ -3,29 +3,36 @@
 #ifndef __STANDART_LIB_PRECOMPILED_HEADER__
 #define __STANDART_LIB_PRECOMPILED_HEADER__
 
+#include <dlib/image_loader/load_image.h>
+#include <dlib/image_processing/frontal_face_detector.h>
+#include <dlib/image_processing/shape_predictor.h>
+#include <dlib/opencv/cv_image.h>
 #include <unistd.h>
 
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <list>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>
+#include <regex>
 #include <string>
 #include <vector>
-#include <functional>
-#include <list>
-#include <regex>
-#include <chrono>
-
 
 #define UNUSED_PARAM(P) ((void)P)
 
-#define TODO(param1, param2)                                                                \
-    UNUSED_PARAM(param1);                                                                   \
-    UNUSED_PARAM(param2);                                                                   \
-    std::cout << "TODO: " << __FILE__ << __LINE__ << " on " << __PRETTY_FUNCTION__ << "\n"; \
+#define TODO(param1, param2)                                \
+    UNUSED_PARAM(param1);                                   \
+    UNUSED_PARAM(param2);                                   \
+    std::cout << "TODO: " << __FILE__ << __LINE__ << " on " \
+              << __PRETTY_FUNCTION__ << "\n";               \
     throw std::runtime_error("TODO!");
 
 #endif

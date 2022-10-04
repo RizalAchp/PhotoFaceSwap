@@ -1,20 +1,7 @@
-#include <dlib/image_loader/load_image.h>
-#include <dlib/image_processing/frontal_face_detector.h>
-#include <dlib/opencv/cv_image.h>
-
 #include <PhotoFaceSwap.hpp>
-#include <opencv2/imgproc.hpp>
 
 static dlib::shape_predictor s_SP;
 static dlib::frontal_face_detector s_Detector;
-
-void GetShapePredictor(dlib::shape_predictor &out)
-{
-    std::vector<uint8_t> buff(
-        _binary_shape_predictor_68_face_landmarks_dat_start,
-        _binary_shape_predictor_68_face_landmarks_dat_end);
-    dlib::deserialize(buff) >> out;
-}
 
 inline cv::ImagePoints2f ReadPoints(const fs::path &pointsFileName)
 {
@@ -29,24 +16,20 @@ inline void GetPoints(const dlib::array2d<dlib::rgb_pixel> &img,
                       std::vector<cv::ImagePoints2f> &output)
 {
     std::vector<dlib::rectangle> det = s_Detector(img);
-    LOG_DEBUG("detecting {%zu} face from image", det.size());
-    if (det.size() > 1)
-        LOG_WARNING(
-            "detecting more than 1 face, multiple face implementation is under "
-            "development!");
+    LOG_DEBUG("PROCESS: detecting {%zu} face from image\n", det.size());
     if (det.empty())
     {
         LOG_ERROR(
-            "cannot detect face in image! make sure the source image is "
-            "valid!");
+            "PROCESS: cannot detect face in image! make sure the source image "
+            "is valid!\n");
         return;
     }
 
     output.reserve(det.size());
     for (auto &rect : det)
     {
-        auto fod = s_SP(img, rect);
-        auto np  = fod.num_parts();
+        dlib::full_object_detection fod = s_SP(img, rect);
+        size_t np                       = fod.num_parts();
         cv::ImagePoints2f ip;
         ip.reserve(np);
 
@@ -84,6 +67,7 @@ void cv::GetConvexHullPoints(std::vector<cv::ImagePoints2f> &point_src,
                              size_t idx)
 {
     int sz_src = point_src.size();
+    LOG_DEBUG("PROCESS: processing convexhull for %d source face \n", sz_src);
     std::vector<ImagePoints2f> tmp_target(sz_src, point_target[idx]);
     for (int i = 0; i < sz_src; i++)
     {
@@ -103,10 +87,12 @@ void cv::GetPointImage(const cv::Mat &_mat, std::vector<cv::ImagePoints2f> &out,
     {
         cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGR);
     }
-    dlib::array2d<dlib::rgb_pixel> dlibFrame;
-    dlib::assign_image(dlibFrame, dlib::cv_image<dlib::rgb_pixel>(mat));
+    LOG_DEBUG(
+        "PROCESS: converting cv::Mat to dlib::array2d<dlib::rgb_pixel> type\n");
+    dlib::array2d<dlib::rgb_pixel> dlib_image;
+    dlib::assign_image(dlib_image, dlib::cv_image<dlib::rgb_pixel>(mat));
 
-    GetPoints(dlibFrame, out);
+    GetPoints(dlib_image, out);
 }
 
 void cv::GetPointImage(const fs::path &path_image_src,
@@ -127,11 +113,19 @@ void cv::GetPointImage(const fs::path &path_image_src,
 void cv::SavePointImage(const fs::path &path_point, const ImagePoints2f &point)
 {
     std::ofstream stream(path_point);
-    for (auto &p : point) stream << (long)p.x << " " << (long)p.y << std::endl;
+    for (auto &p : point) stream << p.x << " " << p.y << std::endl;
 }
 
 void cv::InitPointDectector()
 {
     GetShapePredictor(s_SP);
     s_Detector = dlib::get_frontal_face_detector();
+}
+
+void cv::GetShapePredictor(dlib::shape_predictor &out)
+{
+    std::vector<uint8_t> buff(
+        _binary_shape_predictor_68_face_landmarks_dat_start,
+        _binary_shape_predictor_68_face_landmarks_dat_end);
+    dlib::deserialize(buff) >> out;
 }

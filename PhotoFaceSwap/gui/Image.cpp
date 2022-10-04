@@ -1,10 +1,10 @@
-#include "Image.hpp"
+#include <imgui.h>
 
+#include <Image.hpp>
+#include <Mahi/Gui/Icons/IconsFontAwesome5.hpp>
+#include <Mahi/Gui/Native.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "Mahi/Gui/Icons/IconsFontAwesome5.hpp"
-#include "Mahi/Gui/Native.hpp"
-#include "imgui.h"
 
 ImageSwap::~ImageSwap() { this->Close(); }
 
@@ -45,6 +45,7 @@ void ImageSwap::Close() noexcept
     this->resized.release();
     this->points.clear();
     this->points_show.clear();
+    glBindTexture(GL_TEXTURE_2D, 0);
     glDeleteTextures(1, &texture);
 }
 void ImageSwap::Flip(int code)
@@ -60,10 +61,10 @@ void ImageSwap::Resize(const mahi::gui::Vec2 &size) noexcept(false)
 {
     this->raw.copyTo(this->resized);
     if (this->raw.rows == size.y) return;
-    auto y     = size.y / this->raw.size().height;
+    double y     = (size.y - 35) / this->raw.size().height;
     auto ip    = this->raw.rows > size.y ? cv::INTER_AREA : cv::INTER_LINEAR;
-    auto yraw  = 1920.0 / this->raw.size().height;
-    auto ipraw = this->raw.rows > 1920.0 ? cv::INTER_AREA : cv::INTER_LINEAR;
+    double yraw  = 1280.0 / this->raw.size().height;
+    auto ipraw = this->raw.rows > 1280.0 ? cv::INTER_AREA : cv::INTER_LINEAR;
     cv::resize(this->raw, this->raw, cv::Size(0, 0), yraw, yraw, ipraw);
     cv::resize(this->resized, this->resized, cv::Size(0, 0), y, y, ip);
     cv::cvtColor(this->resized, this->resized, cv::COLOR_BGR2RGBA);

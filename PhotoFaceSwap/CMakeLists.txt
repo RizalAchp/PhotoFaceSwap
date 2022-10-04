@@ -30,7 +30,7 @@ file(GLOB HEADER_GUI ${CMAKE_CURRENT_LIST_DIR}/gui/*.hpp)
 file(GLOB SRC_GUI ${CMAKE_CURRENT_LIST_DIR}/gui/*.cpp)
 
 find_package(OpenCV REQUIRED COMPONENTS opencv_core opencv_imgcodecs
-                                        opencv_imgproc opencv_photo)
+                                        opencv_imgproc opencv_photo opencv_videoio)
 message(${OpenCV_LIBS})
 
 set(USE_AVX_INSTRUCTIONS ON)

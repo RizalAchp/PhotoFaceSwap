@@ -1,8 +1,4 @@
-
-#include "FaceSwapGui.hpp"
-
-#include "ImagePoints.hpp"
-#include "Logger.hpp"
+#include <FaceSwapGui.hpp>
 
 using namespace mahi;
 using namespace mahi::util;
@@ -67,29 +63,33 @@ void PhotoFaceSwapApplication::update()
     if (ImGui::Begin("Image View Source", NULL,
                      SetNextOverlayCorner(_PositionCorner::TopLeft, 1.f)))
     {
-        if (outs.size() == 1)
-        {
-            auto file = *outs.begin();
-            if (Source.Open(file))
-            {
-                Source.Resize(ImGui::GetContentRegionAvail());
-            }
-            else
-            {
-                this->errorMsg.clear();
-                this->errorMsg =
-                    cv::format("Cannot Open Image on file: %s", file.c_str());
-                ImGui::OpenPopup("ERROR!");
-            }
-        }
         if (Source.resized.empty() || Source.raw.empty())
+        {
+            if (!outs.empty())
+            {
+                if (Source.Open(outs))
+                {
+                    Source.Resize(ImGui::GetContentRegionAvail());
+                }
+                else
+                {
+                    this->errorMsg.clear();
+                    this->errorMsg = cv::format("Cannot Open Image on file: %s",
+                                                outs.c_str());
+                    ImGui::OpenPopup("ERROR!");
+                }
+                outs.clear();
+            }
+
             this->ButtonFileManager(
                 (const char *)ICON_FA_FILE " Open Source Image", true);
+        }
         else
         {
             if (ImGui::Button("Close Image##source"))
             {
                 Source.Close();
+                outs.clear();
             }
             ImGui::SameLine();
             if (ImGui::Button("GetPoints Image##source"))
@@ -111,8 +111,8 @@ void PhotoFaceSwapApplication::update()
             ImGui::SameLine();
             static int flipcode = FlipCode::Horizontal;
             ImGui::PushItemWidth(100);
-            if (ImGui::Combo("FlipImage##source", &flipcode,
-                             FLIP_CODE_NAME, IM_ARRAYSIZE(FLIP_CODE_NAME)))
+            if (ImGui::Combo("FlipImage##source", &flipcode, FLIP_CODE_NAME,
+                             IM_ARRAYSIZE(FLIP_CODE_NAME)))
             {
                 Source.Flip(flipcode);
             }
@@ -126,23 +126,25 @@ void PhotoFaceSwapApplication::update()
     if (ImGui::Begin("Image View Target", NULL,
                      SetNextOverlayCorner(_PositionCorner::BottomLeft, 1.f)))
     {
-        if (outs.size() > 1)
-        {
-            auto file = outs[1];
-            if (Target.Open(file))
-                Target.Resize(ImGui::GetContentRegionAvail());
-            else
-            {
-                this->errorMsg.clear();
-                this->errorMsg =
-                    cv::format("Cannot Open Image on file: %s", file.c_str());
-                ImGui::OpenPopup("ERROR!");
-            }
-            outs.clear();
-        }
         if (Target.resized.empty() || Target.raw.empty())
+        {
+            if (!outs.empty())
+            {
+                if (Target.Open(outs))
+                    Target.Resize(ImGui::GetContentRegionAvail());
+                else
+                {
+                    this->errorMsg.clear();
+                    this->errorMsg = cv::format("Cannot Open Image on file: %s",
+                                                outs.c_str());
+                    ImGui::OpenPopup("ERROR!");
+                }
+                outs.clear();
+            }
+
             this->ButtonFileManager(
                 (const char *)ICON_FA_FILE " Open Target Image", false);
+        }
         else
         {
             if (ImGui::Button("Close Image##target"))
@@ -307,7 +309,7 @@ void PhotoFaceSwapApplication::fileDropHandler(
     {
         LOG_DEBUG("Get Dropped file: %s\n", path.c_str());
     }
-    outs.push_back(paths[0]);
+    outs = paths.front();
 }
 
 void PhotoFaceSwapApplication::resizeWindowHandler(int w, int h)
