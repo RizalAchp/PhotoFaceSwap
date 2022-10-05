@@ -6,6 +6,10 @@ project(
 
 option(PFS_ENABLE_SANITIZER "enabling compiler sanitizer" OFF)
 
+if(MSVC)
+set(CMAKE_TOOLCHAIN_FILE "D:/VCPKG/vcpkg/scripts/buildsystems/vcpkg.cmake")
+endif(MSVC)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
@@ -18,7 +22,6 @@ set(BUILD_SHARED_LIBS ON)
 set(CMAKE_COLOR_MAKEFILE ON)
 set(CMAKE_COLOR_DIAGNOSTICS ON)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-fexceptions ${CMAKE_CXX_FLAGS}")
 # Set default build to release
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")

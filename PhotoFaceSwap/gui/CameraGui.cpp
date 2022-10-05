@@ -42,6 +42,7 @@ void Cameras::GetCamList(std::vector<int> &dl_out)
         }
         catch (const cv::Exception &e)
         {
+            LOG_ERROR("Got Exception: %s", e.what());
             continue;
         }
     }

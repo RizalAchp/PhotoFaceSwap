@@ -17,14 +17,6 @@ inline void GetPoints(const dlib::array2d<dlib::rgb_pixel> &img,
 {
     std::vector<dlib::rectangle> det = s_Detector(img);
     LOG_DEBUG("PROCESS: detecting {%zu} face from image\n", det.size());
-    if (det.empty())
-    {
-        LOG_ERROR(
-            "PROCESS: cannot detect face in image! make sure the source image "
-            "is valid!\n");
-        return;
-    }
-
     output.reserve(det.size());
     for (auto &rect : det)
     {
@@ -83,10 +75,7 @@ void cv::GetPointImage(const cv::Mat &_mat, std::vector<cv::ImagePoints2f> &out,
 {
     cv::Mat mat;
     _mat.copyTo(mat);
-    if (convert)
-    {
-        cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGR);
-    }
+    if (convert) cv::cvtColor(mat, mat, cv::COLOR_RGBA2BGR);
     LOG_DEBUG(
         "PROCESS: converting cv::Mat to dlib::array2d<dlib::rgb_pixel> type\n");
     dlib::array2d<dlib::rgb_pixel> dlib_image;
@@ -102,8 +91,8 @@ void cv::GetPointImage(const fs::path &path_image_src,
 {
     dlib::array2d<dlib::rgb_pixel> img_src;
     dlib::array2d<dlib::rgb_pixel> img_target;
-    dlib::load_image(img_src, path_image_src);
-    dlib::load_image(img_target, path_image_target);
+    dlib::load_image(img_src, path_image_src.string());
+    dlib::load_image(img_target, path_image_target.string());
 
     GetPoints(img_src, out_src);
     GetPoints(img_target, out_target);
@@ -124,8 +113,6 @@ void cv::InitPointDectector()
 
 void cv::GetShapePredictor(dlib::shape_predictor &out)
 {
-    std::vector<uint8_t> buff(
-        _binary_shape_predictor_68_face_landmarks_dat_start,
-        _binary_shape_predictor_68_face_landmarks_dat_end);
+    std::vector<uint8_t> buff(SHAPE_PRED_start, SHAPE_PRED_end);
     dlib::deserialize(buff) >> out;
 }

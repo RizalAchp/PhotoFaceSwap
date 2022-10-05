@@ -9,3 +9,5 @@ test-samples
 /*.log
 /*.ini
 
+PhotoFaceSwap/shape_predictor.dat
+PhotoFaceSwap/shape_predictor.obj

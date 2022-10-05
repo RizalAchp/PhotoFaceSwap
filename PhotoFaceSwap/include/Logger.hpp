@@ -36,9 +36,9 @@ class LoggerPhotoFaceSwap
    public:
     LoggerPhotoFaceSwap()  = default;
     ~LoggerPhotoFaceSwap() = default;
-    void Debug(const char *_file, int _line, const std::string &msg);
-    void Warning(const char *_file, int _line, const std::string &msg);
-    void Error(const char *_file, int _line, const std::string &msg);
+    void Debug(const std::string &msg);
+    void Warning(const std::string &msg);
+    void Error(const std::string &msg);
 
     std::shared_ptr<Writer> writer;
     static LogLevel Level;
@@ -54,8 +54,7 @@ class LoggerPhotoFaceSwap
         static_assert(std::is_base_of<Writer, TWriter>::value == true);
         LoggerPhotoFaceSwap::log_instance        = LoggerPhotoFaceSwap();
         LoggerPhotoFaceSwap::log_instance.writer = std::make_shared<TWriter>();
-        LoggerPhotoFaceSwap::log_instance.Debug(__FILE__, __LINE__,
-                                                "Logger Initialized\n");
+        LoggerPhotoFaceSwap::log_instance.Debug("Logger Initialized\n");
     }
     static LoggerPhotoFaceSwap log_instance;
 };

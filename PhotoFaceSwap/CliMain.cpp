@@ -19,6 +19,7 @@ int MainCli(argparse::ArgumentParser &args)
         return 1;
     }
     fs::path file_target = args.get("target_img");
+
     if (!fs::exists(file_target))
     {
         LOG_ERROR(
@@ -27,8 +28,8 @@ int MainCli(argparse::ArgumentParser &args)
             file_target.c_str());
         return 1;
     }
-    cv::Mat source = cv::imread(file_source);
-    cv::Mat target = cv::imread(file_target);
+    cv::Mat source = cv::imread(file_source.string());
+    cv::Mat target = cv::imread(file_target.string());
     std::vector<ImagePoints2f> points_source;
     std::vector<ImagePoints2f> points_target;
     GetPointImage(source, points_source, false);
@@ -39,7 +40,7 @@ int MainCli(argparse::ArgumentParser &args)
 
     fs::path file_out = args.get("-o");
     file_out.replace_extension(file_target.extension());
-    cv::imwrite(file_out, result);
+    cv::imwrite(file_out.string(), result);
     return 0;
 }
 

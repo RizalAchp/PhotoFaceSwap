@@ -94,11 +94,20 @@ void PhotoFaceSwapApplication::update()
             ImGui::SameLine();
             if (ImGui::Button("GetPoints Image##source"))
             {
-                if (!Source.ProcessPoints())
+                try
                 {
-                    this->errorMsg.clear();
-                    this->errorMsg =
-                        "Thereis No Face Destected on Source Image!";
+                    if (!Source.ProcessPoints())
+                    {
+                        this->errorMsg.clear();
+                        this->errorMsg =
+                            "Thereis No Face Destected on Source Image!";
+                        ImGui::OpenPopup("ERROR!");
+                    }
+                }
+                catch (const std::runtime_error &e)
+                {
+                    errorMsg.clear();
+                    errorMsg = e.what();
                     ImGui::OpenPopup("ERROR!");
                 }
             }
@@ -155,11 +164,20 @@ void PhotoFaceSwapApplication::update()
             ImGui::SameLine();
             if (ImGui::Button("GetPoints Image##target"))
             {
-                if (!Target.ProcessPoints())
+                try
                 {
-                    this->errorMsg.clear();
-                    this->errorMsg =
-                        "Thereis No Face Destected on Target Image!";
+                    if (!Target.ProcessPoints())
+                    {
+                        this->errorMsg.clear();
+                        this->errorMsg =
+                            "Thereis No Face Destected on Target Image!";
+                        ImGui::OpenPopup("ERROR!");
+                    }
+                }
+                catch (const std::runtime_error &e)
+                {
+                    errorMsg.clear();
+                    errorMsg = e.what();
                     ImGui::OpenPopup("ERROR!");
                 }
             }
@@ -217,7 +235,7 @@ void PhotoFaceSwapApplication::update()
                         errorMsg = e.what();
                         ImGui::OpenPopup("ERROR!");
                     }
-                    catch (const std::exception &e)
+                    catch (const std::runtime_error &e)
                     {
                         errorMsg.clear();
                         errorMsg = e.what();

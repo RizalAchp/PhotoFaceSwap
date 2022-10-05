@@ -2,10 +2,20 @@
 
 #ifndef __PHOTO_FACE_SWAP_HEADER__
 #define __PHOTO_FACE_SWAP_HEADER__
+#ifndef _MSC_VER
 extern const unsigned char
     _binary_shape_predictor_68_face_landmarks_dat_start[];
 extern const unsigned char _binary_shape_predictor_68_face_landmarks_dat_size;
 extern const unsigned char _binary_shape_predictor_68_face_landmarks_dat_end[];
+#define SHAPE_PRED_start _binary_shape_predictor_68_face_landmarks_dat_start
+#define SHAPE_PRED_size  _binary_shape_predictor_68_face_landmarks_dat_size
+#define SHAPE_PRED_end   _binary_shape_predictor_68_face_landmarks_dat_end
+#else
+extern "C" const unsigned char _binary___shape_predictor_dat_start[];
+extern "C" const unsigned char _binary___shape_predictor_dat_end[];
+#define SHAPE_PRED_start _binary___shape_predictor_dat_start
+#define SHAPE_PRED_end   _binary___shape_predictor_dat_end
+#endif
 
 #ifndef PFS_GUI
 #include <ArgumentParse.hpp>
@@ -13,15 +23,12 @@ extern const unsigned char _binary_shape_predictor_68_face_landmarks_dat_end[];
 #include <Logger.hpp>
 namespace fs = std::filesystem;
 
-#define LOG_DEBUG(...)                                             \
-    LoggerPhotoFaceSwap::Instance().Debug(__FILE_NAME__, __LINE__, \
-                                          cv::format(__VA_ARGS__))
-#define LOG_WARNING(...)                                             \
-    LoggerPhotoFaceSwap::Instance().Warning(__FILE_NAME__, __LINE__, \
-                                            cv::format(__VA_ARGS__))
-#define LOG_ERROR(...)                                             \
-    LoggerPhotoFaceSwap::Instance().Error(__FILE_NAME__, __LINE__, \
-                                          cv::format(__VA_ARGS__))
+#define LOG_DEBUG(...) \
+    LoggerPhotoFaceSwap::Instance().Debug(cv::format(__VA_ARGS__))
+#define LOG_WARNING(...) \
+    LoggerPhotoFaceSwap::Instance().Warning(cv::format(__VA_ARGS__))
+#define LOG_ERROR(...) \
+    LoggerPhotoFaceSwap::Instance().Error(cv::format(__VA_ARGS__))
 #ifdef PFS_GUI
 #define LOG_DRAW(...) LoggerPhotoFaceSwap::Instance().writer->Draw(__VA_ARGS__)
 #else
@@ -58,7 +65,7 @@ namespace cv
                       const ImagePoints2f &poinsrc,
                       const ImagePoints2f &pointarget, cv::Mat &output);
 
-    inline void SaveResult(const fs::path &file, const cv::Mat &result)
+    inline void SaveResult(const std::string &file, const cv::Mat &result)
     {
         imwrite(file, result);
     }

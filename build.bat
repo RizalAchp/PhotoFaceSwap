@@ -1,0 +1,1 @@
+cmake -B ./build -DOpenCV_DIR="D:\VCPKG\vcpkg\packages\opencv4_x64-windows\share\opencv4" -DBUILD_SHARED_LIBS=OFF -DCMAKE_TOOLCHAIN_FILE="D:/VCPKG/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE="Release" -S . -Wno-dev
