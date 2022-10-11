@@ -63,7 +63,7 @@ namespace cv
 
     void ProcessImage(const Mat &_src_mat, const Mat &_tgt_mat,
                       const ImagePoints2f &poinsrc,
-                      const ImagePoints2f &pointarget, cv::Mat &output);
+                      const ImagePoints2f &pointarget, cv::Mat &output, bool isHistmatchSource = true);
 
     inline void SaveResult(const std::string &file, const cv::Mat &result)
     {

@@ -1,6 +1,6 @@
 #include <PhotoFaceSwap.hpp>
-#define HISTMATCH_EPSILON 0.000001
-/// #define HISTMATCH_EPSILON 0.001
+/// #define HISTMATCH_EPSILON 0.00000001
+#define HISTMATCH_EPSILON 0.001
 
 namespace cv
 {
@@ -171,7 +171,7 @@ namespace cv
 
     void ProcessImage(const Mat &_src_mat, const Mat &_tgt_mat,
                       const ImagePoints2f &poinsrc,
-                      const ImagePoints2f &pointarget, Mat &output)
+                      const ImagePoints2f &pointarget, Mat &output, bool isHismatchSource)
     {
         Mat src_mat;
         Mat tgt_mat;
@@ -202,7 +202,10 @@ namespace cv
         Rect r = boundingRect(pointarget);
         warped.convertTo(warped, CV_8UC3);
 
-        histMatchRGB(tgt_mat, mask, warped, mask);
+        if (isHismatchSource)
+            histMatchRGB(warped, mask, tgt_mat, mask);
+        else 
+            histMatchRGB(tgt_mat, mask, warped, mask);
         // Clone seamlessly.
         seamlessClone(warped, tgt_mat, mask, (r.tl() + r.br()) / 2, output,
                       NORMAL_CLONE);

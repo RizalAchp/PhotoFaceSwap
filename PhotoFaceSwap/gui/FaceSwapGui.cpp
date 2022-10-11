@@ -126,6 +126,7 @@ void PhotoFaceSwapApplication::update()
                 Source.Flip(flipcode);
             }
 
+
             Source.Draw();
         }
         ImGui::End();
@@ -206,6 +207,9 @@ void PhotoFaceSwapApplication::update()
             }
             if (!Source.raw.empty() && !Target.raw.empty())
             {
+                ImGui::SameLine();
+                static bool histmatch = true;
+                ImGui::Checkbox("HistMatchSource", &histmatch);
                 if (ImGui::Button("Start Swapping Face"))
                 {
                     ImGui::SameLine();
@@ -224,7 +228,7 @@ void PhotoFaceSwapApplication::update()
                         LOG_DEBUG("PROCESS: processing to swap the image\n");
                         cv::ProcessImage(Source.raw, Target.raw,
                                          Source.GetPointSelected(),
-                                         Target.GetPointSelected(), Output.raw);
+                                         Target.GetPointSelected(), Output.raw, histmatch);
 
                         Output.Resize(ImGui::GetContentRegionAvail());
                         Output.UpdateTexture();
