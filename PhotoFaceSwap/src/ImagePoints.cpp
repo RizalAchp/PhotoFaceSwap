@@ -16,12 +16,12 @@ inline void GetPoints(const dlib::array2d<dlib::rgb_pixel> &img,
                       std::vector<cv::ImagePoints2f> &output)
 {
     std::vector<dlib::rectangle> det = s_Detector(img);
-    LOG_DEBUG("PROCESS: detecting {%zu} face from image\n", det.size());
+    LOG_DEBUG("PROCESS: detecting {%zu} face from image", det.size());
     output.reserve(det.size());
     for (auto &rect : det)
     {
-        dlib::full_object_detection fod = s_SP(img, rect);
-        size_t np                       = fod.num_parts();
+        auto fod = s_SP(img, rect);
+        auto np  = fod.num_parts();
         cv::ImagePoints2f ip;
         ip.reserve(np);
 

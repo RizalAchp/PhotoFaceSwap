@@ -37,7 +37,7 @@ void LoggerPhotoFaceSwap::Debug(const std::string &msg)
     if (Level != LogLevel::Debug) return;
     std::stringstream time;
     TimeNow(time);
-    this->writer->AddLog(cv::format("[DEBUG]::[%s]=>%s", time.str(), msg.c_str()));
+    this->writer->AddLog(cv::format("[DEBUG]::[%s]=>%s", time.str().c_str(), msg.c_str()));
 }
 void LoggerPhotoFaceSwap::Warning(const std::string &msg)
 {
@@ -45,7 +45,7 @@ void LoggerPhotoFaceSwap::Warning(const std::string &msg)
     std::stringstream time;
     TimeNow(time);
     this->writer->AddLog(
-        cv::format("[WARNING]::[%s:%d]=>%s", time.str(), msg.c_str()));
+        cv::format("[WARNING]::[%s]=>%s", time.str().c_str(), msg.c_str()));
 }
 void LoggerPhotoFaceSwap::Error(const std::string &msg)
 {
@@ -53,5 +53,5 @@ void LoggerPhotoFaceSwap::Error(const std::string &msg)
     TimeNow(time);
 
     this->writer->AddLog(
-        cv::format("[ERROR]::[%s:%d]=>%s", time.str(), msg.c_str()));
+        cv::format("[ERROR]::[%s]=>%s", time.str().c_str(), msg.c_str()));
 }

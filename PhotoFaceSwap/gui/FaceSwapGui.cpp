@@ -97,12 +97,8 @@ void PhotoFaceSwapApplication::update()
                 try
                 {
                     if (!Source.ProcessPoints())
-                    {
-                        this->errorMsg.clear();
-                        this->errorMsg =
-                            "Thereis No Face Destected on Source Image!";
-                        ImGui::OpenPopup("ERROR!");
-                    }
+                        throw std::runtime_error(
+                            "Thereis No Face Destected on Target Image!");
                 }
                 catch (const std::runtime_error &e)
                 {
@@ -125,7 +121,6 @@ void PhotoFaceSwapApplication::update()
             {
                 Source.Flip(flipcode);
             }
-
 
             Source.Draw();
         }
@@ -168,12 +163,8 @@ void PhotoFaceSwapApplication::update()
                 try
                 {
                     if (!Target.ProcessPoints())
-                    {
-                        this->errorMsg.clear();
-                        this->errorMsg =
-                            "Thereis No Face Destected on Target Image!";
-                        ImGui::OpenPopup("ERROR!");
-                    }
+                        throw std::runtime_error(
+                            "Thereis No Face Destected on Target Image!");
                 }
                 catch (const std::runtime_error &e)
                 {
@@ -182,6 +173,21 @@ void PhotoFaceSwapApplication::update()
                     ImGui::OpenPopup("ERROR!");
                 }
             }
+            ImGui::SameLine();
+            if (ImGui::Button("RemovePoints##target"))
+            {
+                Target.points_show.clear();
+                Target.points.clear();
+            }
+            ImGui::SameLine();
+            static int flipcode = FlipCode::Horizontal;
+            ImGui::PushItemWidth(100);
+            if (ImGui::Combo("FlipImage##target", &flipcode, FLIP_CODE_NAME,
+                             IM_ARRAYSIZE(FLIP_CODE_NAME)))
+            {
+                Target.Flip(flipcode);
+            }
+
             Target.Draw();
         }
         ImGui::End();
@@ -226,9 +232,9 @@ void PhotoFaceSwapApplication::update()
                         }
                         cv::GetConvexHullPoints(Source.points, Target.points);
                         LOG_DEBUG("PROCESS: processing to swap the image\n");
-                        cv::ProcessImage(Source.raw, Target.raw,
-                                         Source.GetPointSelected(),
-                                         Target.GetPointSelected(), Output.raw, histmatch);
+                        cv::ProcessImage(
+                            Source.raw, Target.raw, Source.GetPointSelected(),
+                            Target.GetPointSelected(), Output.raw, histmatch);
 
                         Output.Resize(ImGui::GetContentRegionAvail());
                         Output.UpdateTexture();
@@ -296,6 +302,7 @@ void PhotoFaceSwapApplication::update()
             }
             Output.Draw();
         }
+        ImGui::End();
     }
 
     auto flags = SetNextOverlayCorner(_PositionCorner::BottomRight);
@@ -372,8 +379,8 @@ ImFont *AddDefaultFont(const char *namefont, unsigned char *font,
     // merge in icons from font awesome 5 brands
     static const ImWchar fab_ranges[] = {ICON_MIN_FAB, ICON_MAX_FAB, 0};
     ImFont *font_out                  = io.Fonts->AddFontFromMemoryTTF(
-                         gui::fa_brands_400_ttf, gui::fa_brands_400_ttf_len,
-                         round(pixel_size * 1.f), &icons_config, fab_ranges);
+        gui::fa_brands_400_ttf, gui::fa_brands_400_ttf_len,
+        round(pixel_size * 1.f), &icons_config, fab_ranges);
     return font_out;
 }
 

@@ -1,4 +1,4 @@
 #!/usr/bin/bash
 
-cmake --build ./build --target all -j
-# cmake --build ./build --target PhotoFaceSwap-Gui -j
+# cmake --build ./build --config Debug --target all -j
+cmake --build ./build --config Release --target all -j

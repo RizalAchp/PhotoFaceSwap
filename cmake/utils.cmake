@@ -12,7 +12,6 @@ macro(target_enable_warning target_name)
     ${target_name}
     PRIVATE
       $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>:
-      -fexceptions
       -Wall
       -Wextra
       >
